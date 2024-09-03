@@ -15,8 +15,11 @@ export default $config({
   },
   async run() {
     const NeonDB = new sst.Secret("NeonDB")
-    new sst.aws.Remix("MyWeb", {
+    new sst.aws.SolidStart("TanStack_Start", {
       link: [NeonDB],
-    });
+    })
+   /* new sst.aws.Remix("MyWeb", {
+      link: [NeonDB],
+    });*/
   },
 });

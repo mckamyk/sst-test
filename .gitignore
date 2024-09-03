@@ -6,3 +6,9 @@ node_modules
 
 # sst
 .sst
+
+
+.idea
+
+# Ignore all app.config files with timestamps
+app.config.timestamp_*.js

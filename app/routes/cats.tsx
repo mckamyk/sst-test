@@ -1,21 +1,24 @@
 // app/routes/cats.tsx
-import {json, redirect} from '@remix-run/node';
-import {Form, useLoaderData} from '@remix-run/react';
-import {getCats, addCat, deleteCatById, updateCatById} from "~/.server/cats"
-import {Label} from "~/components/ui/label";
-import {Input} from "~/components/ui/input";
-import {Button} from "~/components/ui/button";
-import {Checkbox} from "~/components/ui/checkbox";
+import {getCats, addCat, deleteCatById, updateCatById} from '../server/cats';
+import {Label} from "../components/ui/label";
+import {Input} from "../components/ui/input";
+import {Button} from "../components/ui/button";
+import {Checkbox} from "../components/ui/checkbox";
 
-export async function loader() {
+import { createFileRoute, useRouter } from '@tanstack/react-router'
+
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+export const Route = createFileRoute("/cats")({
+	component: CatsPage,
+	loader: async () => await getAllCats(),
+})
+
+async function getAllCats() {
 	const allCats = await getCats();
-	return json({cats: allCats});
+	return {cats: allCats};
 }
 
-export async function action({request}: { request: Request }) {
-	const formData = await request.formData();
-	const actionType = formData.get('_action');
-
+async function action({ actionType, formData }: { actionType: string, formData: FormData }) {
 	if (actionType === 'create') {
 		const name = formData.get('name') as string;
 		const age = Number(formData.get('age'));
@@ -30,7 +33,7 @@ export async function action({request}: { request: Request }) {
 		const age = Number(formData.get('age'));
 		const breed = formData.get('breed') as string;
 		const isIndoor = formData.get('isIndoor') === 'on';
-		await updateCatById(id, {name, age, breed, isIndoor});
+		await updateCatById({id, name, age, breed, isIndoor});
 	}
 
 	if (actionType === 'delete') {
@@ -38,18 +41,23 @@ export async function action({request}: { request: Request }) {
 
 		await deleteCatById(id);
 	}
-
-	return redirect('/cats');
 }
 
-export default function CatsPage() {
-	const {cats} = useLoaderData<typeof loader>();
+function CatsPage() {
+	const router = useRouter()
+	const { cats } = Route.useLoaderData();
+
+	const handleSubmit = () => {
+		return action({ actionType:"create", formData: new FormData()}).then(() => {
+			return router.invalidate();
+		})
+	}
 
 	return (
 		<div className={"py-8 px-14"}>
 			<h1 className={"text-3xl"}>Manage Cats</h1>
 
-			<Form method="post" className={"min-w-[400px] flex flex-col items-start justify-start gap-4"}>
+			<form method="post" className={"min-w-[400px] flex flex-col items-start justify-start gap-4"}>
 				<h2 className={"text-xl"}>Add New Cat</h2>
 				<div className="grid w-full max-w-sm items-center gap-1.5">
 					<Label htmlFor="name">Name:</Label>
@@ -68,49 +76,43 @@ export default function CatsPage() {
 
 				<div className="flex items-center space-x-2">
 					<Checkbox id="isIndoor" name={"isIndoor"}/>
-					<Label htmlFor="isIndoor"
-						   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Indoor</Label>
+					<Label htmlFor="isIndoor" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Indoor</Label>
 				</div>
 
 				<Button type="submit" name="_action" value="create">
 					Add Cat
 				</Button>
-			</Form>
+			</form>
 
 			<h2 className={"mt-6 mb-4 text-2xl"}>Current Cats</h2>
 			<div className={"flex flex-wrap items-center align-middle gap-4"}>
 				{cats.sort((a, b) => (a.id - b.id)).map((cat) => (
 					<div key={cat.id} className={"rounded-2xl border p-4"}>
-						<Form method="post" className={"min-w-[400px] flex flex-col items-start justify-start gap-4"}>
+						<form method="post" className={"min-w-[400px] flex flex-col items-start justify-start gap-4"}>
 
 							<div className="grid w-full max-w-sm items-center gap-1.5">
 								<Label htmlFor="id">Id:</Label>
-								<Input className={"pointer-events-none cursor-not-allowed"} defaultValue={cat.id} type="text" name="id" id="id"
-									   placeholder="Id:"/>
+								<Input className={"pointer-events-none cursor-not-allowed"} defaultValue={cat.id} type="text" name="id" id="id" placeholder="Id:"/>
 							</div>
 
 							<div className="grid w-full max-w-sm items-center gap-1.5">
 								<Label htmlFor="name">Name:</Label>
-								<Input defaultValue={cat.name} type="text" name="name" id="name"
-									   placeholder="Name:"/>
+								<Input defaultValue={cat.name} type="text" name="name" id="name" placeholder="Name:"/>
 							</div>
 
 							<div className="grid w-full max-w-sm items-center gap-1.5">
 								<Label htmlFor="age">Age: </Label>
-								<Input defaultValue={cat.age} type="number" name="age" id="age"
-									   placeholder="Name:"/>
+								<Input defaultValue={cat.age} type="number" name="age" id="age" placeholder="Name:"/>
 							</div>
 
 							<div className="grid w-full max-w-sm items-center gap-1.5">
 								<Label htmlFor="breed">Breed:</Label>
-								<Input defaultValue={cat.breed} type="text" name="breed" id="breed"
-									   placeholder="Breed:"/>
+								<Input defaultValue={cat.breed} type="text" name="breed" id="breed" placeholder="Breed:"/>
 							</div>
 
 							<div className="flex items-center space-x-2">
 								<Checkbox defaultChecked={cat?.isIndoor || false} id="isIndoor" name={"isIndoor"}/>
-								<Label htmlFor="isIndoor"
-									   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Indoor:</Label>
+								<Label htmlFor="isIndoor" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Indoor:</Label>
 							</div>
 
 							<div className={"flex items-center space-x-2"}>
@@ -122,10 +124,12 @@ export default function CatsPage() {
 								</Button>
 							</div>
 
-						</Form>
+						</form>
 					</div>
 				))}
 			</div>
 		</div>
 	);
 }
+
+

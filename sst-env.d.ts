@@ -3,13 +3,13 @@
 import "sst"
 declare module "sst" {
   export interface Resource {
-    "MyWeb": {
-      "type": "sst.aws.Remix"
-      "url": string
-    }
     "NeonDB": {
       "type": "sst.sst.Secret"
       "value": string
+    }
+    "TanStack_Start": {
+      "type": "sst.aws.SolidStart"
+      "url": string
     }
   }
 }
